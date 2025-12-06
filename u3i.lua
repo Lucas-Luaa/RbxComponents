@@ -2,6 +2,7 @@
 	rbimgui-2
 	version 1.2
 	by Singularity
+	Remix By Lucas
         https://v3rmillion.net/member.php?action=profile&uid=947830
         Singularity#5490
 --]]
@@ -1976,6 +1977,7 @@ local library library = {
                     self.close()
                     return self
                 end
+
                 function types.dropdown(dropdownOptions)
                     local self = { }
                     self.isopen = true
@@ -2132,86 +2134,6 @@ local library library = {
                         end
                     end
 
-                    do
-                        local TextBox = dropdownWindow:FindFirstChild("Content"):FindFirstChild("Search"):FindFirstChild("Outer"):FindFirstChild("Inner"):FindFirstChild("TextBox")
-                        local inTextBox = false
-                        TextBox.MouseEnter:Connect(function() inTextBox = true end)
-                        TextBox.MouseLeave:Connect(function() inTextBox = false end)
-                        local lastTick = tick()
-                        local lastTickN = 1
-                        local text = ""
-                        local canSearch = false
-                        local shift = false
-                        local backspace = false
-                        local function updateTextBox()
-                            lastTick = tick()
-                            lastTickN = 1
-                            self.search(text)
-                        end
-                        mouse.InputBegan:Connect(function()
-                            if findBrowsingTopMost() == dropdownWindow then canSearch = inTextBox else canSearch = false end
-                            if canSearch then
-                                TextBox.TextColor3 = Color3.new(1, 1, 1)
-                                spawn(function()
-                                    while canSearch do
-                                        TextBox.Text = text .. (lastTickN == 1 and "|" or "")
-                                        if (tick() - lastTick) >= 0.5 then
-                                            lastTick = tick()
-                                            lastTickN = 1 - lastTickN
-                                        end
-                                        RunService.Heartbeat:Wait()
-                                    end
-                                    lastTickN = 0
-                                    TextBox.Text = text .. (lastTickN == 1 and "|" or "")
-                                    TextBox.TextColor3 = Color3.fromRGB(178,178,178)
-                                    if text == "" then TextBox.Text = "Search ..." end
-                                end)
-                            end
-                        end)
-                        UserInputService.InputBegan:Connect(function(inputObject)
-                            local keycode = inputObject.KeyCode
-                            if keycode == Enum.KeyCode.LeftShift then shift = true end
-                            if canSearch then
-                                if keycode == Enum.KeyCode.Backspace then
-                                    backspace = true
-                                    text = text:sub(1, -2)
-                                    updateTextBox()
-                                    local backspaceTick = tick()
-                                    local backspaceN = 0.5
-                                    spawn(function()
-                                        while backspace do
-                                            if (tick() - backspaceTick) >= backspaceN then
-                                                backspaceN = 0.05
-                                                backspaceTick = tick()
-                                                text = text:sub(1, -2)
-                                                updateTextBox()
-                                            end
-                                            RunService.Heartbeat:Wait()
-                                        end
-                                        backspaceN = 0.5
-                                    end)
-                                elseif keycode == Enum.KeyCode.Space then
-                                    text = text .. " "
-                                    updateTextBox()
-                                end
-                                if betweenOpenInterval(keycode.Value, 48, 57) then
-                                    local name = rawget({ Zero = 0, One = 1, Two = 2, Three = 3, Four = 4, Five = 5, Six = 6, Seven = 7, Eight = 8, Nine = 9 }, keycode.Name)
-                                    text = text .. name
-                                    updateTextBox()
-                                end
-                                if betweenOpenInterval(keycode.Value, 97, 122) then
-                                    local name = (not shift) and keycode.Name:lower() or keycode.Name
-                                    text = text .. name
-                                    updateTextBox()
-                                end
-                            end
-                        end)
-                        UserInputService.InputEnded:Connect(function(inputObject)
-                            if inputObject.KeyCode == Enum.KeyCode.LeftShift then shift = false
-                            elseif inputObject.KeyCode == Enum.KeyCode.Backspace then backspace = false end
-                        end)
-                    end
-
                     function self.setPosition(position)
                         dropdownWindow.Position = position
                     end
@@ -2221,7 +2143,7 @@ local library library = {
                         dropdownWindow:Destroy()
                     end
 
-                    function self.Reset()
+                    function self:ResetSelection()
                         self.selected = nil
                         inner:FindFirstChild("Value").Text = "[...]"
                         dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[...]"
@@ -2232,18 +2154,22 @@ local library library = {
                         end
                     end
 
-                    function self.SetValue(value)
-                        if type(value) ~= "table" then value = {value} end
-                        self:Reset()
-                        local displayText = ""
-                        for _, v in ipairs(value) do
-                            local obj = dropdownObjects[v]
-                            if obj then obj:Select() displayText = displayText .. v .. ", " end
+                    function self:ClearAll()
+                        for name, obj in pairs(dropdownObjects) do
+                            obj.object:Destroy()
+                            rawset(dropdownObjects, name, nil)
                         end
-                        if displayText ~= "" then
-                            displayText = displayText:sub(1, -3)
-                            inner:FindFirstChild("Value").Text = "[ " .. displayText .. " ]"
-                            dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[ " .. displayText .. " ]"
+                        self.selected = nil
+                        inner:FindFirstChild("Value").Text = "[...]"
+                        dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[...]"
+                    end
+
+                    function self:SetValue(value)
+                        if type(value) ~= "table" then value = {value} end
+                        self:ClearAll()
+                        for _, v in ipairs(value) do
+                            local obj = self:new(v)
+                            obj:Select()
                         end
                     end
 
@@ -2251,6 +2177,7 @@ local library library = {
                     self.close()
                     return self
                 end
+
 
 
                 function types.dock(dockOptions)
