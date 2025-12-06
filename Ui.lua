@@ -1,8 +1,9 @@
 --[[
 	rbimgui-2
 	version 1.5
-	by Singularity
-        https://v3rmillion.net/member.php?action=profile&uid=947830
+	Original by Singularity
+	Remix By Lucas 
+		lucas.001x
         Singularity#5490
 --]]
 
@@ -1976,15 +1977,15 @@ local library library = {
                     self.close()
                     return self
                 end
-
+                
                 function types.dropdown(dropdownOptions)
-                    local self = {}
+                    local self = { }
                     self.isopen = true
                     self.visible = false
                     self.selected = nil
                     self.event = event.new()
                     self.eventBlock = false
-                    
+
                     dropdownOptions = settings.new({
                         text = "New Dropdown",
                         size = 150,
@@ -1992,14 +1993,14 @@ local library library = {
                         rounding = options.rounding,
                         selectioncolor = Color3.fromRGB(32, 59, 97),
                     }).handle(dropdownOptions)
-                    
+
                     local dropdownButton = new("Dropdown")
                     local dropdownWindow = new("DropdownWindow")
                     dropdownWindow.Parent = ScreenGui
                     dropdownWindow.Visible = self.visible
                     dragger.new(dropdownWindow)
                     dropdownButton.Parent = items
-                    
+
                     local text = dropdownButton:FindFirstChild("Text")
                     local outer = dropdownButton:FindFirstChild("Outer")
                     local inner = outer:FindFirstChild("Inner")
@@ -2007,11 +2008,12 @@ local library library = {
                     outer.SliceScale = dropdownOptions.rounding / 100
                     inner.SliceScale = dropdownOptions.rounding / 100
                     inner:FindFirstChild("Value").Text = "[...]"
+
                     text.Text = dropdownOptions.text
                     dropdownWindow:FindFirstChild("Title").Text = dropdownOptions.text
                     outer.Size = UDim2.new(0, dropdownOptions.size, 0, 20)
                     text.Position = UDim2.new(0, dropdownOptions.size + 8, 0, 0)
-                    
+
                     inner.MouseButton1Click:Connect(function()
                         self.visible = not self.visible
                         dropdownWindow.Visible = self.visible
@@ -2021,7 +2023,7 @@ local library library = {
                             setTopMost(dropdownWindow)
                         end
                     end)
-                    
+
                     dropdownWindow:FindFirstChild("Expand").MouseButton1Click:Connect(function()
                         if self.isopen then
                             self.close()
@@ -2029,24 +2031,24 @@ local library library = {
                             self.open()
                         end
                     end)
-                    
-                    local dropdownCache = {}
-                    
+
+                    local dropdownCache = { }
                     function self.close()
                         if not self.isopen then return end
                         self.isopen = false
-                        resize(dropdownWindow:FindFirstChild("Expand"), {Rotation = 0}, options.animation)
-                        dropdownCache.content_size = dropdownWindow:FindFirstChild("Content").AbsoluteSize.Y
-                        resize(dropdownWindow:FindFirstChild("Content"), {Size = UDim2.new(1, 0, 0, 0)}, options.animation)
+                        resize(dropdownWindow:FindFirstChild("Expand"), { Rotation = 0 }, options.animation)
+                        dropdownCache.content_size = 200
+                        dropdownCache.tabs_size = tabs.Size.Y.Offset
+                        resize(dropdownWindow:FindFirstChild("Content"), { Size = UDim2.new(1, 0, 0, 0) }, options.animation)
                     end
-                    
+
                     function self.open()
                         if self.isopen then return end
                         self.isopen = true
-                        resize(dropdownWindow:FindFirstChild("Expand"), {Rotation = 90}, options.animation)
-                        resize(dropdownWindow:FindFirstChild("Content"), {Size = UDim2.new(1, 0, 0, dropdownCache.content_size or 200)}, options.animation)
+                        resize(dropdownWindow:FindFirstChild("Expand"), { Rotation = 90 }, options.animation)
+                        resize(dropdownWindow:FindFirstChild("Content"), { Size = UDim2.new(1, 0, 0, dropdownCache.content_size) }, options.animation)
                     end
-                    
+
                     function dropdownCache.update_layers(y)
                         dropdownWindow:FindFirstChild("Shadow").Position = UDim2.new(0, options.shadow, 0, options.shadow)
                         dropdownWindow:FindFirstChild("Shadow").Size = UDim2.new(1, 0, 0, y)
@@ -2054,172 +2056,123 @@ local library library = {
                         dropdownWindow:FindFirstChild("Layer").Size = UDim2.new(1, 0, 0, y)
                         dropdownWindow:FindFirstChild("Layer").SliceScale = options.rounding / 100
                     end
-                    
                     dropdownCache.update_layers(dropdownWindow.AbsoluteSize.Y + dropdownWindow:FindFirstChild("Content").AbsoluteSize.Y)
-                    
+
                     dropdownWindow:FindFirstChild("Content"):GetPropertyChangedSignal("Size"):Connect(function()
-                        local mainHeight = dropdownWindow:FindFirstChild("Title").AbsoluteSize.Y or 30
-                        dropdownCache.update_layers(mainHeight + dropdownWindow:FindFirstChild("Content").AbsoluteSize.Y)
+                        dropdownCache.update_layers(main.AbsoluteSize.Y + dropdownWindow:FindFirstChild("Content").AbsoluteSize.Y)
                     end)
-                    
+
                     local dropdownItems = dropdownWindow:FindFirstChild("Content"):FindFirstChild("Items")
-                    
                     local function updateCanvas()
                         local XY = countSize(dropdownItems)
                         if XY then
                             dropdownItems.CanvasSize = UDim2.new(0, 0, 0, XY.Y)
                         end
                     end
-                    
+
                     dropdownItems.ScrollBarImageColor3 = Color3.new()
                     dropdownItems.ChildAdded:Connect(updateCanvas)
                     dropdownItems.ChildRemoved:Connect(updateCanvas)
-                    
-                    local dropdownObjects = {}
-                    
+
+                    local dropdownObjects = { }
                     function self.new(name)
-                        local dropdownObject = {}
+                        local dropdownObject = { }
                         dropdownObject.selected = false
-                        dropdownObject.name = tostring(name)
-                        
-                        if dropdownObjects[name] then
-                            return dropdownObjects[name]
-                        end
-                        
-                        dropdownObjects[name] = dropdownObject
-                        
+                        dropdownObject.name = name
+                        assert(rawget(dropdownObjects, name) == nil)
+                        rawset(dropdownObjects, name, dropdownObject)
+
                         local dropdownOption = new("DropdownOption")
                         dropdownObject.object = dropdownOption
+                        local content = dropdownWindow:FindFirstChild("Content")
                         dropdownOption.Parent = dropdownItems
-                        dropdownOption.Text = " " .. dropdownObject.name
+                        dropdownOption.Text = "  " .. name
                         dropdownOption.TextColor3 = Color3.fromRGB(178, 178, 178)
-                        
                         dropdownOption.MouseButton1Click:Connect(function()
                             if findBrowsingTopMost() == dropdownWindow then
                                 dropdownObject:Select()
                             end
                         end)
-                        
+
                         function dropdownObject.Select()
                             dropdownObject.selected = not dropdownObject.selected
                             local selectedList = {}
-                            
                             for n, obj in pairs(dropdownObjects) do
                                 if obj.selected then
-                                    table.insert(selectedList, tostring(n))
-                                    resize(obj.object, {TextColor3 = Color3.new(1, 1, 1)}, 0.1)
-                                    resize(obj.object:GetChildren()[1], {ImageColor3 = dropdownOptions.selectioncolor}, 0.1)
+                                    table.insert(selectedList, n)
+                                    resize(obj.object, { TextColor3 = Color3.new(1, 1, 1) }, 0.1)
+                                    resize(obj.object:GetChildren()[1], { ImageColor3 = dropdownOptions.selectioncolor }, 0.1)
                                 else
-                                    resize(obj.object, {TextColor3 = Color3.fromRGB(178, 178, 178)}, 0.1)
-                                    resize(obj.object:GetChildren()[1], {ImageColor3 = Color3.fromRGB(42, 44, 46)}, 0.1)
+                                    resize(obj.object, { TextColor3 = Color3.fromRGB(178,178,178) }, 0.1)
+                                    resize(obj.object:GetChildren()[1], { ImageColor3 = Color3.fromRGB(42,44,46) }, 0.1)
                                 end
                             end
-                            
-                            if #selectedList == 0 then
-                                self.selected = nil
-                                inner:FindFirstChild("Value").Text = "[...]"
-                                dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[...]"
-                            elseif #selectedList == 1 then
-                                self.selected = selectedList[1]
-                                inner:FindFirstChild("Value").Text = "[ " .. selectedList[1] .. " ]"
-                                dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[ " .. selectedList[1] .. " ]"
-                            else
-                                self.selected = selectedList
-                                local displayText = table.concat(selectedList, ", ")
-                                inner:FindFirstChild("Value").Text = "[ " .. displayText .. " ]"
-                                dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[ " .. displayText .. " ]"
-                            end
-                            
+                            self.selected = #selectedList == 1 and selectedList[1] or selectedList
+                            inner:FindFirstChild("Value").Text = "[ " .. table.concat(selectedList, ", ") .. " ]"
+                            dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[ " .. table.concat(selectedList, ", ") .. " ]"
                             if not self.eventBlock then
                                 self.event:Fire(self.selected)
                             end
                         end
-                        
+
                         function dropdownObject.Destroy()
-                            if dropdownObject.object then
-                                dropdownObject.object:Destroy()
-                            end
-                            dropdownObjects[name] = nil
+                            dropdownObject.selected = false
+                            inner:FindFirstChild("Value").Text = "[...]"
+                            dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[...]"
+                            rawset(dropdownObjects, name, nil)
                         end
-                        
+
                         return dropdownObject
                     end
-                    
+
                     function self.search(key)
-                        key = tostring(key)
                         for name, dropdownObject in pairs(dropdownObjects) do
                             dropdownObject.object.Parent = dropdownWindow:FindFirstChild("Cache")
-                            if tostring(dropdownObject.name):lower():match(key:lower()) then
+                            if dropdownObject.name:match(key) then
                                 dropdownObject.object.Parent = dropdownItems
                             end
                         end
                     end
-                    
+
                     function self.setPosition(position)
                         dropdownWindow.Position = position
                     end
-                    
+
                     function self:Destroy()
                         dropdownButton:Destroy()
                         dropdownWindow:Destroy()
                     end
-                    
-                    function self.ResetSelection()
+
+                    function self:ResetSelection()
                         self.selected = nil
                         inner:FindFirstChild("Value").Text = "[...]"
                         dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[...]"
-                        
                         for name, obj in pairs(dropdownObjects) do
                             obj.selected = false
-                            resize(obj.object, {TextColor3 = Color3.fromRGB(178, 178, 178)}, 0.1)
-                            resize(obj.object:GetChildren()[1], {ImageColor3 = Color3.fromRGB(42, 44, 46)}, 0.1)
+                            resize(obj.object, { TextColor3 = Color3.fromRGB(178,178,178) }, 0.1)
+                            resize(obj.object:GetChildren()[1], { ImageColor3 = Color3.fromRGB(42,44,46) }, 0.1)
                         end
                     end
-                    
-                    function self.ClearAll()
+
+                    function self:ClearAll()
                         for name, obj in pairs(dropdownObjects) do
-                            if obj.object then
-                                obj.object:Destroy()
-                            end
+                            obj.object:Destroy()
+                            rawset(dropdownObjects, name, nil)
                         end
-                        dropdownObjects = {}
                         self.selected = nil
                         inner:FindFirstChild("Value").Text = "[...]"
                         dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[...]"
                     end
-                    
-                    function self:.etValue(value)
-                        self.eventBlock = true
-                        self:ResetSelection()
-                        
-                        if type(value) ~= "table" then
-                            value = {value}
-                        end
-                        
-                        for _, v in ipairs(value) do
-                            local obj = self.new(v)
-                            if obj and obj.Select then
-                                obj.Select()
-                            end
-                        end
-                        
-                        self.eventBlock = false
-                    end
-                    
-                    function self.GetValue()
-                        return self.selected
-                    end
-                    
-                    function self.AddOption(name)
-                        return self.new(name)
-                    end
-                    
-                    function self.RemoveOption(name)
-                        if dropdownObjects[name] then
-                            dropdownObjects[name]:Destroy()
-                        end
-                    end
-                    
+
+                    -- function self:SetValue(value)
+                    --     if type(value) ~= "table" then value = {value} end
+                    --     self:ClearAll()
+                    --     for _, v in ipairs(value) do
+                    --         local obj = self:new(v)
+                    --         obj:Select()
+                    --     end
+                    -- end
+
                     self.self = dropdownButton
                     self.close()
                     return self
