@@ -1,6 +1,6 @@
 --[[
 	rbimgui-2
-	version 1.2
+	version 1.5
 	by Singularity
         https://v3rmillion.net/member.php?action=profile&uid=947830
         Singularity#5490
@@ -2164,7 +2164,7 @@ local library library = {
                         dropdownWindow:Destroy()
                     end
                     
-                    function self:ResetSelection()
+                    function self.ResetSelection()
                         self.selected = nil
                         inner:FindFirstChild("Value").Text = "[...]"
                         dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[...]"
@@ -2176,7 +2176,7 @@ local library library = {
                         end
                     end
                     
-                    function self:ClearAll()
+                    function self.ClearAll()
                         for name, obj in pairs(dropdownObjects) do
                             if obj.object then
                                 obj.object:Destroy()
@@ -2188,7 +2188,7 @@ local library library = {
                         dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[...]"
                     end
                     
-                    function self:SetValue(value)
+                    function self:.etValue(value)
                         self.eventBlock = true
                         self:ResetSelection()
                         
@@ -2206,15 +2206,15 @@ local library library = {
                         self.eventBlock = false
                     end
                     
-                    function self:GetValue()
+                    function self.GetValue()
                         return self.selected
                     end
                     
-                    function self:AddOption(name)
+                    function self.AddOption(name)
                         return self.new(name)
                     end
                     
-                    function self:RemoveOption(name)
+                    function self.RemoveOption(name)
                         if dropdownObjects[name] then
                             dropdownObjects[name]:Destroy()
                         end
