@@ -1,11 +1,12 @@
 --[[
-	rbimgui-2
-	version 1.5
-	Original by Singularity
-	Remix By Lucas 
-		lucas.001x
-        Singularity#5490
+	rbimgui
+	    - version 1.5
+	    - Original by Singularity
+	    - Remix By Lucas
+	    - lucas.001x
+        - Singularity#5490
 --]]
+
 
 repeat wait() until game:GetService("Players").LocalPlayer
 if game:GetService("CoreGui"):FindFirstChild("imgui2") then
@@ -1977,7 +1978,7 @@ local library library = {
                     self.close()
                     return self
                 end
-                
+
                 function types.dropdown(dropdownOptions)
                     local self = { }
                     self.isopen = true
@@ -2036,6 +2037,7 @@ local library library = {
                     function self.close()
                         if not self.isopen then return end
                         self.isopen = false
+
                         resize(dropdownWindow:FindFirstChild("Expand"), { Rotation = 0 }, options.animation)
                         dropdownCache.content_size = 200
                         dropdownCache.tabs_size = tabs.Size.Y.Offset
@@ -2045,6 +2047,7 @@ local library library = {
                     function self.open()
                         if self.isopen then return end
                         self.isopen = true
+
                         resize(dropdownWindow:FindFirstChild("Expand"), { Rotation = 90 }, options.animation)
                         resize(dropdownWindow:FindFirstChild("Content"), { Size = UDim2.new(1, 0, 0, dropdownCache.content_size) }, options.animation)
                     end
@@ -2055,8 +2058,7 @@ local library library = {
                         dropdownWindow:FindFirstChild("Shadow").SliceScale = options.rounding / 100
                         dropdownWindow:FindFirstChild("Layer").Size = UDim2.new(1, 0, 0, y)
                         dropdownWindow:FindFirstChild("Layer").SliceScale = options.rounding / 100
-                    end
-                    dropdownCache.update_layers(dropdownWindow.AbsoluteSize.Y + dropdownWindow:FindFirstChild("Content").AbsoluteSize.Y)
+                    end dropdownCache.update_layers(dropdownWindow.AbsoluteSize.Y + dropdownWindow:FindFirstChild("Content").AbsoluteSize.Y)
 
                     dropdownWindow:FindFirstChild("Content"):GetPropertyChangedSignal("Size"):Connect(function()
                         dropdownCache.update_layers(main.AbsoluteSize.Y + dropdownWindow:FindFirstChild("Content").AbsoluteSize.Y)
@@ -2079,7 +2081,7 @@ local library library = {
                         local dropdownObject = { }
                         dropdownObject.selected = false
                         dropdownObject.name = name
-                        assert(rawget(dropdownObjects, name) == nil)
+                        assert(rawget(dropdownObjects, name) == nil, string.format("object already exists in dropdown '%s'", dropdownOptions.text))
                         rawset(dropdownObjects, name, dropdownObject)
 
                         local dropdownOption = new("DropdownOption")
@@ -2095,43 +2097,143 @@ local library library = {
                         end)
 
                         function dropdownObject.Select()
-                            dropdownObject.selected = not dropdownObject.selected
-                            local selectedList = {}
-                            for n, obj in pairs(dropdownObjects) do
-                                if obj.selected then
-                                    table.insert(selectedList, n)
-                                    resize(obj.object, { TextColor3 = Color3.new(1, 1, 1) }, 0.1)
-                                    resize(obj.object:GetChildren()[1], { ImageColor3 = dropdownOptions.selectioncolor }, 0.1)
-                                else
-                                    resize(obj.object, { TextColor3 = Color3.fromRGB(178,178,178) }, 0.1)
-                                    resize(obj.object:GetChildren()[1], { ImageColor3 = Color3.fromRGB(42,44,46) }, 0.1)
-                                end
+                            self.selected = name
+                            for i, v in next, dropdownObjects do
+                                v.selected = false
+                                resize(v.object, { TextColor3 = Color3.fromRGB(178, 178, 178) }, 0.1)
+                                resize(v.object:GetChildren()[1], { ImageColor3 = Color3.fromRGB(42, 44, 46) }, 0.1)
                             end
-                            self.selected = #selectedList == 1 and selectedList[1] or selectedList
-                            inner:FindFirstChild("Value").Text = "[ " .. table.concat(selectedList, ", ") .. " ]"
-                            dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[ " .. table.concat(selectedList, ", ") .. " ]"
+                            dropdownObjects[name].selected = true
+                            resize(dropdownOption, { TextColor3 = Color3.new(1, 1, 1) }, 0.1)
+                            resize(dropdownOption:GetChildren()[1], { ImageColor3 = dropdownOptions.selectioncolor }, 0.1)
+                            inner:FindFirstChild("Value").Text = string.format("[ %s ]", name)
+                            dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = string.format("[ %s ]", name)
                             if not self.eventBlock then
-                                self.event:Fire(self.selected)
+                                self.event:Fire(name)
                             end
                         end
 
                         function dropdownObject.Destroy()
-                            dropdownObject.selected = false
-                            inner:FindFirstChild("Value").Text = "[...]"
-                            dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[...]"
-                            rawset(dropdownObjects, name, nil)
+                            if rawget(dropdownObject, name) then
+                                inner:FindFirstChild("Value").Text = "[...]"
+                                dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[...]"
+                            end
+                            self.selected = nil
+                            rawset(dropdownObject, name, nil)
                         end
 
                         return dropdownObject
                     end
 
                     function self.search(key)
-                        for name, dropdownObject in pairs(dropdownObjects) do
+                        for name, dropdownObject in next, dropdownObjects do
                             dropdownObject.object.Parent = dropdownWindow:FindFirstChild("Cache")
                             if dropdownObject.name:match(key) then
                                 dropdownObject.object.Parent = dropdownItems
                             end
                         end
+                    end
+
+                    do -- search bar
+                        local TextBox = dropdownWindow:FindFirstChild("Content"):FindFirstChild("Search"):FindFirstChild("Outer"):FindFirstChild("Inner"):FindFirstChild("TextBox")
+                        local inTextBox = false
+                        TextBox.MouseEnter:Connect(function()
+                            inTextBox = true
+                        end)
+                        TextBox.MouseLeave:Connect(function()
+                            inTextBox = false
+                        end)
+
+                        local lastTick = tick()
+                        local lastTickN = 1
+                        local text = ""
+                        local canSearch = false
+                        local shift = false
+                        local backspace = false
+                        local function updateTextBox()
+                            lastTick = tick()
+                            lastTickN = 1
+                            self.search(text)
+                        end
+
+                        mouse.InputBegan:Connect(function()
+                            if findBrowsingTopMost() == dropdownWindow then
+                                canSearch = inTextBox
+                            else
+                                canSearch = false
+                            end
+                            if canSearch then
+                                TextBox.TextColor3 = Color3.new(1, 1, 1)
+                                spawn(function()
+                                    while canSearch do
+                                        TextBox.Text = text .. (lastTickN == 1 and "|" or "")
+                                        if (tick() - lastTick) >= 0.5 then
+                                            lastTick = tick()
+                                            lastTickN = 1 - lastTickN
+                                        end
+                                        RunService.Heartbeat:Wait()
+                                    end
+                                    lastTickN = 0
+                                    TextBox.Text = text .. (lastTickN == 1 and "|" or "")
+                                    TextBox.TextColor3 = Color3.fromRGB(178, 178, 178)
+                                    if text == "" then
+                                        TextBox.Text = "Search ..."
+                                    end
+                                end)
+                            end
+                        end)
+
+                        UserInputService.InputBegan:Connect(function(inputObject)
+                            local keycode = inputObject.KeyCode
+                            if keycode == Enum.KeyCode.LeftShift then
+                                shift = true
+                            end
+                            if canSearch then
+                                if keycode == Enum.KeyCode.Backspace then
+                                    backspace = true
+                                    text = text:sub(1, -2)
+                                    updateTextBox()
+
+                                    local backspaceTick = tick()
+                                    local backspaceN = 0.5
+                                    spawn(function()
+                                        while backspace do
+                                            if (tick() - backspaceTick) >= backspaceN then
+                                                backspaceN = 0.05
+                                                backspaceTick = tick()
+                                                text = text:sub(1, -2)
+                                                updateTextBox()
+                                            end
+                                            RunService.Heartbeat:Wait()
+                                        end
+                                        backspaceN = 0.5
+                                    end)
+                                elseif keycode == Enum.KeyCode.Space then
+                                    text = text .. " "
+                                    updateTextBox()
+                                end
+                                if betweenOpenInterval(keycode.Value, 48, 57) then -- 0-9
+                                    local name = rawget({ Zero = 0, One = 1, Two = 2, Three = 3, Four = 4, Five = 5, Six = 6, Seven = 7, Eight = 8, Nine = 9 }, keycode.Name)
+                                    -- if shift then
+                                    --     name = rawget({ "=", "!", '"', "#", "¤", "%", "&", "/", "(", ")" }, name + 1)
+                                    -- end
+                                    text = text .. name
+                                    updateTextBox()
+                                end
+                                if betweenOpenInterval(keycode.Value, 97, 122) then -- A-Z
+                                    local name = (not shift) and keycode.Name:lower() or keycode.Name
+                                    text = text .. name
+                                    updateTextBox()
+                                end
+                            end
+                        end)
+                        UserInputService.InputEnded:Connect(function(inputObject)
+                            if inputObject.KeyCode == Enum.KeyCode.LeftShift then
+                                shift = false
+                            elseif inputObject.KeyCode == Enum.KeyCode.Backspace then
+                                backspace = false
+                            end
+                        end)
                     end
 
                     function self.setPosition(position)
@@ -2143,7 +2245,7 @@ local library library = {
                         dropdownWindow:Destroy()
                     end
 
-                    function self:ResetSelection()
+                    function self.ResetSelection()
                         self.selected = nil
                         inner:FindFirstChild("Value").Text = "[...]"
                         dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[...]"
@@ -2154,7 +2256,7 @@ local library library = {
                         end
                     end
 
-                    function self:ClearAll()
+                    function self.ClearAll()
                         for name, obj in pairs(dropdownObjects) do
                             obj.object:Destroy()
                             rawset(dropdownObjects, name, nil)
@@ -2164,21 +2266,10 @@ local library library = {
                         dropdownWindow:FindFirstChild("Content"):FindFirstChild("Selected").Text = "[...]"
                     end
 
-                    -- function self:SetValue(value)
-                    --     if type(value) ~= "table" then value = {value} end
-                    --     self:ClearAll()
-                    --     for _, v in ipairs(value) do
-                    --         local obj = self:new(v)
-                    --         obj:Select()
-                    --     end
-                    -- end
-
                     self.self = dropdownButton
                     self.close()
                     return self
                 end
-
-
 
                 function types.dock(dockOptions)
                     local self = { }
